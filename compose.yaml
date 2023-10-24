@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  wordpress:
+    image: wordpress
+    restart: always
+    deploy:
+      replicas: 2
+    expose:
+      - "80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: shaynlink
+      WORDPRESS_DB_PASSWORD: shasha2020
+      WORDPRESS_DB_NAME: wpdb
+    volumes:
+      - wordpress:/var/www/html
+    links:
+      - memcached:memcached
+    networks:
+      - front-network
+      - back-network
+
+  proxy:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 8080:80
+    depends_on:
+      - wordpress
+    networks:
+      - front-network
+
+  db:
+    # Use plateform to specify the architecture of the image for Macos M1 compatibility
+    platform: linux/amd64
+    image: mysql:5.7
+    restart: always
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: wpdb
+      MYSQL_USER: shaynlink
+      MYSQL_PASSWORD: shasha2020
+      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - back-network
+
+  memcached:
+    image: memcached:alpine
+    restart: always
+    networks:
+      - back-network
+
+networks:
+  front-network:
+    driver: bridge
+  back-network:
+    driver: bridge
+
+volumes:
+  wordpress:
+  db:
